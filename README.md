@@ -1,107 +1,91 @@
 # Case Itau - Renegociacao
 
-Implementacao de um recorte de modernizacao para o dominio de cobranca e renegociacao com Java e Spring Boot.
+Projeto que fiz para o case de modernizacao de cobranca e renegociacao.
 
-## Escopo implementado
+O recorte implementado foi o fluxo de renegociacao:
 
-- Simulacao de renegociacao
-- Efetivacao de acordo
-- Mudanca de status da divida para renegociada
-- Publicacao de evento em outbox
-- API REST documentada por OpenAPI
-- Testes unitarios e de integracao
+- simular acordo de uma divida
+- efetivar acordo
+- consultar acordo criado
+- impedir nova renegociacao da mesma divida
 
-## Stack
+## Tecnologias
 
 - Java 21
 - Spring Boot 3
 - Spring Web
 - Spring Data JPA
 - H2
-- OpenAPI
+- PostgreSQL
 - JUnit 5
 
-## Como executar
+## Como rodar local
 
 ```bash
 mvn spring-boot:run
 ```
 
-Aplicacao:
+URLs:
 
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger-ui.html`
 - H2 Console: `http://localhost:8080/h2-console`
 
-## Como executar com Docker
+## Como rodar com Docker
 
 ```bash
 docker compose up --build
 ```
 
-Aplicacao:
+URLs:
 
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger-ui.html`
-- Banco Postgres: `localhost:5432` (`reneg` / `reneg`)
+- Postgres: `localhost:5432` (usuario `reneg`, senha `reneg`)
 
-Para encerrar:
+Para parar:
 
 ```bash
 docker compose down
 ```
 
-Para encerrar removendo volume:
+Para parar limpando volume:
 
 ```bash
 docker compose down -v
 ```
 
-## Endpoints principais
+## Endpoints
 
 - `POST /api/v1/debts/{debtId}/simulate`
 - `POST /api/v1/agreements`
 - `GET /api/v1/agreements/{agreementId}`
 
-## Exemplo de simulacao
+## Massa inicial para teste
 
-`POST /api/v1/debts/11111111-1111-1111-1111-111111111111/simulate`
+- `11111111-1111-1111-1111-111111111111`
+- `22222222-2222-2222-2222-222222222222`
 
-```json
-{
-  "downPayment": 300.00,
-  "installmentCount": 6
-}
-```
+## Testes de request
 
-## Exemplo de criacao de acordo
+Arquivo: `requests.http`
 
-`POST /api/v1/agreements`
+Fluxo recomendado:
 
-```json
-{
-  "debtId": "11111111-1111-1111-1111-111111111111",
-  "downPayment": 600.00,
-  "installmentCount": 8
-}
-```
+1. simular divida 1
+2. criar acordo da divida 1
+3. consultar acordo criado
+4. tentar simular de novo a mesma divida (esperado 422)
+5. repetir com a divida 2
 
-## Premissas de negocio adotadas
+## Regras de negocio usadas no recorte
 
-- Valor total da divida = principal + encargos
-- Desconto por quantidade de parcelas
+- valor total da divida = principal + encargos
+- desconto por quantidade de parcelas:
   - 1 parcela: 12%
   - 2 a 6 parcelas: 8%
   - 7 a 12 parcelas: 4%
   - 13 a 24 parcelas: 0%
-- Bonus de 3% adicional para entrada >= 20% do valor original
-- Parcela minima de 50.00
-- Divida somente pode ser renegociada quando status estiver `OPEN`
-
-## Arquitetura e relatorio
-
-- Arquitetura: `docs/architecture.md`
-- Relatorio tecnico: `docs/relatorio-tecnico.md`
-- Roteiro de apresentacao: `docs/roteiro-apresentacao-10min.md`
-- Evidencias para demo: `docs/evidencias-demo.md`
-- Testes de API prontos: `requests.http`
+- bonus de 3% se entrada for >= 20% do valor original
+- parcela minima de 50.00
+- so permite renegociar divida com status `OPEN`
